@@ -346,5 +346,3 @@ Security model, patched findings, and accepted risks: [`docs/security.md`](docs/
 | [`docs/backend-setup-guide.md`](docs/backend-setup-guide.md) | Step-by-step Google backend setup, written for non-technical users |
 | [`docs/security.md`](docs/security.md) | Threat model, fixes, accepted risks |
 | [`backend/apps-script/README.md`](backend/apps-script/README.md) | Short technical backend reference |
-#   P a w f i l e  
- 
