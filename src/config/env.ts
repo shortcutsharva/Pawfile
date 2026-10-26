@@ -17,7 +17,7 @@ export const env = {
 } as const;
 
 export const APP_VERSION = '1.0.0';
-export const APP_NAME = 'Animal Welfare';
+export const APP_NAME = 'Pawfile';
 export const DEVELOPER_NAME = 'Shortcut Sharva';
 export const DEVELOPER_EMAIL = 'connect@sharva.xyz';
 export const DEVELOPER_PHONE = '+91 7349771083';

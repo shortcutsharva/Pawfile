@@ -1,4 +1,4 @@
-# Animal Welfare
+# Pawfile
 
 A phone app for animal-rescue activists. It records complaints, tracks rescue and legal work
 (police complaint, FIR, court hearings), assigns rescuers, keeps a contact directory, reminds you
@@ -126,8 +126,8 @@ Replace the placeholders in [`app.json`](app.json):
 
 | Field | Current placeholder |
 |---|---|
-| `expo.name` | `Animal Welfare` |
-| `expo.slug` | `animal-welfare` |
+| `expo.name` | `Pawfile` |
+| `expo.slug` | `pawfile` |
 | `ios.bundleIdentifier` | `com.animalwelfare.app` |
 | `android.package` | `com.animalwelfare.app` |
 | `extra.eas.projectId` | empty |

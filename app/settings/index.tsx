@@ -7,7 +7,7 @@ import { AppText } from '@/components/ui/Text';
 import { useAppConfig, useSettings, useSyncStatus } from '@/hooks/useAppData';
 import { backendModeLabel, retryFailedSync } from '@/data/sync/SyncManager';
 import { formatDateTime } from '@/utils/date';
-import { APP_VERSION, DEVELOPER_EMAIL, DEVELOPER_NAME } from '@/config/env';
+import { APP_NAME, APP_VERSION, DEVELOPER_EMAIL, DEVELOPER_NAME } from '@/config/env';
 import { colors, radius, spacing } from '@/theme/tokens';
 
 export default function SettingsScreen() {
@@ -51,7 +51,7 @@ export default function SettingsScreen() {
       value: 'Tokens and component states',
       href: '/style-gallery',
     },
-    { icon: 'information-circle-outline', label: 'About', value: `Animal Welfare V${APP_VERSION}` },
+    { icon: 'information-circle-outline', label: 'About', value: `${APP_NAME} V${APP_VERSION}` },
   ];
 
   return (

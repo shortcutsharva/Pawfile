@@ -7,7 +7,7 @@ import { AppText } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { useSettings, useSyncStatus } from '@/hooks/useAppData';
 import { backendModeLabel, retryFailedSync } from '@/data/sync/SyncManager';
-import { APP_VERSION, DEVELOPER_EMAIL, DEVELOPER_NAME, DEVELOPER_PHONE } from '@/config/env';
+import { APP_NAME, APP_VERSION, DEVELOPER_EMAIL, DEVELOPER_NAME, DEVELOPER_PHONE } from '@/config/env';
 import { callPhone, sanitizePhone } from '@/services/share';
 import { formatDateTime } from '@/utils/date';
 import { colors, radius, spacing } from '@/theme/tokens';
@@ -45,7 +45,7 @@ export default function MoreScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <AppBar title="More" subtitle="Animal Welfare" />
+      <AppBar title="More" subtitle={APP_NAME} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Pressable
           onPress={() => router.push('/settings/profile')}
@@ -167,7 +167,7 @@ export default function MoreScreen() {
         </View>
 
         <AppText variant="caption" color={colors.ink500} center style={styles.version}>
-          Animal Welfare V{APP_VERSION} · works offline
+          {APP_NAME} V{APP_VERSION} · works offline
         </AppText>
       </ScrollView>
     </SafeAreaView>

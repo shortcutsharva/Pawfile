@@ -71,7 +71,7 @@ async function buildPayload(includeComplainant: boolean): Promise<ExportPayload>
   return {
     version: 1,
     exportedAt: nowISO(),
-    app: 'animal-welfare',
+    app: 'pawfile',
     cases: includeComplainant ? cases : cases.map(stripComplainant),
     actions,
     hearings,
@@ -125,12 +125,12 @@ export async function exportBackup(options: ExportOptions): Promise<string | nul
       if (entry) entries[entry[0]] = entry[1];
     }
     const zip = zipSync(entries);
-    uri = `${directory}animal-welfare-backup-${stamp}.zip`;
+    uri = `${directory}pawfile-backup-${stamp}.zip`;
     await FileSystem.writeAsStringAsync(uri, base64FromBytes(zip), {
       encoding: FileSystem.EncodingType.Base64,
     });
   } else {
-    uri = `${directory}animal-welfare-backup-${stamp}.json`;
+    uri = `${directory}pawfile-backup-${stamp}.json`;
     await FileSystem.writeAsStringAsync(uri, JSON.stringify(payload, null, 2));
   }
   await updateSettings({ lastBackupAt: nowISO() });
@@ -281,15 +281,15 @@ function parsePayload(content: string): ExportPayload {
   try {
     parsed = JSON.parse(content);
   } catch {
-    throw new Error('This file is not a valid Animal Welfare backup.');
+    throw new Error('This file is not a valid Pawfile backup.');
   }
   if (!isRecord(parsed) || parsed.version !== 1) {
-    throw new Error('This file is not a valid Animal Welfare backup.');
+    throw new Error('This file is not a valid Pawfile backup.');
   }
   return {
     version: 1,
     exportedAt: typeof parsed.exportedAt === 'string' ? parsed.exportedAt : nowISO(),
-    app: typeof parsed.app === 'string' ? parsed.app : 'animal-welfare',
+    app: typeof parsed.app === 'string' ? parsed.app : 'pawfile',
     cases: readRecords<Case>(parsed.cases, 'caseId', 'case'),
     actions: readRecords<Action>(parsed.actions, 'actionId', 'action'),
     hearings: readRecords<Hearing>(parsed.hearings, 'hearingId', 'hearing'),
@@ -411,5 +411,5 @@ export function summaryLine(payload: ExportPayload): string {
 }
 
 export function paybackFileName(payload: ExportPayload): string {
-  return `animal-welfare-${dateKey(payload.exportedAt)}.json`;
+  return `pawfile-${dateKey(payload.exportedAt)}.json`;
 }
