@@ -1,0 +1,131 @@
+# ---------------------------------------------------------------------------
+# Dependencies
+# ---------------------------------------------------------------------------
+node_modules/
+.pnp
+.pnp.js
+.yarn/
+
+# ---------------------------------------------------------------------------
+# Secrets and local configuration
+#
+# .env and .env.* hold the Apps Script URL and shared secret. They must never
+# be committed. .env.example is the documented template and is committed.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# Google service credentials, if you ever add native/Firebase config
+credentials.json
+google-services.json
+GoogleService-Info.plist
+
+# clasp (Apps Script CLI) local state - clasprc.json holds OAuth tokens
+clasp.json
+.clasp.json
+clasprc.json
+.clasprc.json
+
+# ---------------------------------------------------------------------------
+# Expo / React Native build output
+#
+# EXPO_PUBLIC_* values are inlined into the bundle at build time, so a bundle
+# built with EXPO_PUBLIC_SHEETS_SECRET contains the secret in plain text.
+# ---------------------------------------------------------------------------
+.expo/
+.expo-shared/
+dist/
+dist-web/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+*.hbc
+
+# ---------------------------------------------------------------------------
+# Generated native projects (Expo prebuild / Continuous Native Generation)
+#
+# Delete these two lines if you decide to commit android/ and ios/ as
+# checked-in native projects. The build-output rules below still apply.
+# ---------------------------------------------------------------------------
+/ios
+/android
+
+# Native build output, in case the native folders are committed later
+.gradle/
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+*.ipa
+*.apk
+*.aab
+local.properties
+.cxx/
+
+# ---------------------------------------------------------------------------
+# Tests and coverage
+# ---------------------------------------------------------------------------
+coverage/
+.nyc_output/
+*.lcov
+
+# ---------------------------------------------------------------------------
+# Logs
+# ---------------------------------------------------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---------------------------------------------------------------------------
+# Editors and operating systems
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+
+# ---------------------------------------------------------------------------
+# TypeScript
+# ---------------------------------------------------------------------------
+*.tsbuildinfo
+
+# ---------------------------------------------------------------------------
+# Local agent/tool state
+#
+# .commandcode/ holds per-machine tool preferences, not app code. Commit it
+# only if you deliberately want to share those preferences with the team.
+# ---------------------------------------------------------------------------
+.commandcode/
+
+# ---------------------------------------------------------------------------
+# Docs and changelog kept local-only
+#
+# Only three docs are published: app-overview.md, backend-setup-guide.md, and
+# security.md. Everything else in docs/ (the plan, design spec, architecture
+# notes, wireframes) and the entire changelog stay on this machine.
+#
+# docs/ itself must NOT be ignored or git will never look inside it, so the
+# rule ignores its children and re-adds the allow-listed files. To publish
+# another doc, add a matching !docs/<file> line.
+# ---------------------------------------------------------------------------
+docs/*
+!docs/app-overview.md
+!docs/backend-setup-guide.md
+!docs/security.md
+changelog/
+
+# ---------------------------------------------------------------------------
+# Miscellaneous
+# ---------------------------------------------------------------------------
+*.orig
+*.rej
+*.tgz
+.eslintcache

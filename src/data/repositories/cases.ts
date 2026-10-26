@@ -1,0 +1,62 @@
+import { boolInt, bool, num, str, SqliteRepository } from '@/data/repository';
+import type { RepositoryOptions } from '@/data/repository';
+import type { Case, CaseStatus, Urgency } from '@/data/types';
+import type { LegalStatus, RescueStatus } from '@/theme/status';
+
+const options: RepositoryOptions<Case> = {
+  table: 'cases',
+  idField: 'caseId',
+  sheet: 'Cases',
+  rowToEntity: (row): Case => ({
+    caseId: str(row.caseId),
+    title: str(row.title),
+    animalType: str(row.animalType),
+    complaintCategory: str(row.complaintCategory),
+    description: str(row.description),
+    state: str(row.state),
+    district: str(row.district),
+    locationText: str(row.locationText),
+    locationLat: num(row.locationLat),
+    locationLng: num(row.locationLng),
+    complaintSource: str(row.complaintSource),
+    complainantName: str(row.complainantName),
+    complainantPhone: str(row.complainantPhone),
+    status: (str(row.status, 'open') as CaseStatus) ?? 'open',
+    rescueStatus: str(row.rescueStatus, 'na') as RescueStatus,
+    legalStatus: str(row.legalStatus, 'na') as LegalStatus,
+    urgency: str(row.urgency, 'Medium') as Urgency,
+    createdAt: str(row.createdAt),
+    updatedAt: str(row.updatedAt),
+    syncedAt: row.syncedAt ? str(row.syncedAt) : null,
+    localVersion: Number(row.localVersion ?? 1),
+    serverVersion: Number(row.serverVersion ?? 0),
+    isDeleted: bool(row.isDeleted),
+  }),
+  entityToRow: (entity): Record<string, unknown> => ({
+    caseId: entity.caseId,
+    title: entity.title,
+    animalType: entity.animalType,
+    complaintCategory: entity.complaintCategory,
+    description: entity.description,
+    state: entity.state,
+    district: entity.district,
+    locationText: entity.locationText,
+    locationLat: entity.locationLat,
+    locationLng: entity.locationLng,
+    complaintSource: entity.complaintSource,
+    complainantName: entity.complainantName,
+    complainantPhone: entity.complainantPhone,
+    status: entity.status,
+    rescueStatus: entity.rescueStatus,
+    legalStatus: entity.legalStatus,
+    urgency: entity.urgency,
+    createdAt: entity.createdAt,
+    updatedAt: entity.updatedAt,
+    syncedAt: entity.syncedAt,
+    localVersion: entity.localVersion,
+    serverVersion: entity.serverVersion,
+    isDeleted: boolInt(entity.isDeleted),
+  }),
+};
+
+export const casesRepository = new SqliteRepository<Case>(options);

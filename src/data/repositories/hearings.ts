@@ -1,0 +1,60 @@
+import { boolInt, bool, str, SqliteRepository } from '@/data/repository';
+import type { RepositoryOptions } from '@/data/repository';
+import type { Hearing, HearingResult } from '@/data/types';
+import type { HearingStatus } from '@/theme/status';
+
+const options: RepositoryOptions<Hearing> = {
+  table: 'hearings',
+  idField: 'hearingId',
+  sheet: 'Hearings',
+  rowToEntity: (row): Hearing => ({
+    hearingId: str(row.hearingId),
+    caseId: str(row.caseId),
+    actionId: str(row.actionId),
+    date: str(row.date),
+    time: str(row.time, '09:00'),
+    court: str(row.court),
+    purpose: str(row.purpose),
+    attendeeId: str(row.attendeeId, 'self'),
+    attendeeName: str(row.attendeeName, 'Self'),
+    outcome: str(row.outcome),
+    result: str(row.result) as HearingResult | '',
+    nextHearingDate: row.nextHearingDate ? str(row.nextHearingDate) : null,
+    status: str(row.status, 'scheduled') as HearingStatus,
+    reminder7d: bool(row.reminder7d),
+    reminder3d: bool(row.reminder3d),
+    reminder1d: bool(row.reminder1d),
+    createdAt: str(row.createdAt),
+    updatedAt: str(row.updatedAt),
+    syncedAt: row.syncedAt ? str(row.syncedAt) : null,
+    localVersion: Number(row.localVersion ?? 1),
+    serverVersion: Number(row.serverVersion ?? 0),
+    isDeleted: bool(row.isDeleted),
+  }),
+  entityToRow: (entity): Record<string, unknown> => ({
+    hearingId: entity.hearingId,
+    caseId: entity.caseId,
+    actionId: entity.actionId,
+    date: entity.date,
+    time: entity.time,
+    court: entity.court,
+    purpose: entity.purpose,
+    attendeeId: entity.attendeeId,
+    attendeeName: entity.attendeeName,
+    outcome: entity.outcome,
+    result: entity.result,
+    nextHearingDate: entity.nextHearingDate,
+    status: entity.status,
+    reminder7d: boolInt(entity.reminder7d),
+    reminder3d: boolInt(entity.reminder3d),
+    reminder1d: boolInt(entity.reminder1d),
+    createdAt: entity.createdAt,
+    updatedAt: entity.updatedAt,
+    syncedAt: entity.syncedAt,
+    localVersion: entity.localVersion,
+    serverVersion: entity.serverVersion,
+    isDeleted: boolInt(entity.isDeleted),
+  }),
+};
+
+export const hearingsRepository = new SqliteRepository<Hearing>(options);
