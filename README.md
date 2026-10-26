@@ -8,6 +8,9 @@ Built with Expo (React Native) and TypeScript. Every record is stored on the pho
 the app works with no account, no server, and no internet. Connecting the optional Google Sheets
 backend lets several phones share one dataset.
 
+**Installing on a phone:** a release APK is already published, so you do not need to build the
+app. The setup and build sections below are only for running it from source or making changes.
+
 ## Screenshots
 
 | Home | Cases | Contacts |
@@ -99,7 +102,8 @@ uploaded to Google Drive.
 3. In **Project Settings → Script Properties**, add:
    - `SPREADSHEET_ID` — the ID from step 1
    - `APP_SHARED_SECRET` — a random string of **at least 16 characters**
-   - `DRIVE_ROOT_FOLDER_ID` — optional; a folder is created if omitted
+   - `DRIVE_ROOT_FOLDER_ID` — optional; the Drive folder where case images and attachments are
+     stored. If omitted, a folder is created automatically.
 4. Run `setupSpreadsheet` once from the editor and approve the Google permissions.
 5. **Deploy → New deployment → Web app**, with **Execute as: Me** and
    **Who has access: Anyone**. Copy the URL ending in `/exec`.
@@ -109,24 +113,12 @@ uploaded to Google Drive.
 The full walkthrough, written for non-technical users, is
 [`docs/backend-setup-guide.md`](docs/backend-setup-guide.md).
 
-### Things that surprise people
-
-- **The secret is the only protection.** Anyone who has the `/exec` URL and the secret can read and
-  change every case, including complainant names and phone numbers. Treat it as a password.
-- **Remove demo data before connecting**, or the sample cases are pushed into the shared Sheet.
-- **Photos live in Drive, not in the Sheet.** The Sheet's `Documents` tab stores the file name,
-  upload status, and Drive link. The image itself is a file in Drive under
-  `Animal Rescue App/Cases/#<case number>/`.
-- **The app only accepts `https://script.google.com/.../exec`.** This stops a pasted URL from
-  receiving the secret.
-- **After editing `Code.gs`, redeploy a new version** (Deploy → Manage deployments → pencil →
-  New version). Saving the file alone does not update the live endpoint.
-- **Settings → Categories is per device.** To ship the same lists to everyone, edit
-  [`src/config/defaults.ts`](src/config/defaults.ts) and rebuild.
-
 ---
 
-## 4. Build a release
+## 4. Build a release (optional)
+
+**You do not need this section to use the app.** A release APK is already published; build only
+if you want your own copy or are changing the code.
 
 ### Before building
 
@@ -196,24 +188,7 @@ npx expo export --platform web --output-dir dist-web
 
 ---
 
-## 6. Configuration reference
-
-All variables are optional. The app runs with none of them set.
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `EXPO_PUBLIC_APP_ENV` | `development` | `production` disables demo seeding |
-| `EXPO_PUBLIC_SHEETS_ENDPOINT` | empty | Build-time Apps Script `/exec` URL |
-| `EXPO_PUBLIC_SHEETS_SECRET` | empty | Build-time shared secret, 16+ characters |
-| `EXPO_PUBLIC_DEMO_MODE` | `true` in dev, `false` in production | Seed demo records on first launch |
-| `EXPO_PUBLIC_DEFAULT_ACTOR_NAME` | `Activist` | Display name written into history entries |
-
-Copy [`.env.example`](.env.example) to `.env.local` to start. Runtime values entered in
-**Settings → Shared backend** override build-time values and are stored in the device keychain.
-
----
-
-## 7. Where the data lives
+## 6. Where the data lives
 
 | Data | Location |
 |---|---|
@@ -228,7 +203,7 @@ produces JSON or a ZIP with media; complainant details are excluded unless expli
 
 ---
 
-## 8. Troubleshooting
+## 7. Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -246,70 +221,7 @@ produces JSON or a ZIP with media; complainant details are excluded unless expli
 
 ---
 
-## 9. Project layout
-
-```text
-app/                       expo-router screens
-src/theme/                 design tokens and status colours
-src/components/            shared and domain components
-src/config/                defaults, India locations, environment
-src/db/                    SQLite schema and client
-src/data/                  types, repositories, queue, sync, services, seed
-src/hooks/                 data hooks
-src/services/              notifications, sharing, media, uploads, backup
-backend/apps-script/       Sheets + Drive backend (Code.gs)
-docs/                      published docs plus local-only specs and wireframes
-changelog/                 implementation history (local only)
-assets/                    icons, splash, fonts, screenshots
-```
-
-The app is local-first. Screens read from SQLite through repositories, and writes queue locally
-before syncing. Sync runs every five minutes, on network regain, and when the app returns to the
-foreground.
-
----
-
-## 10. What is committed to git
-
-Committed:
-
-```text
-app/  src/  assets/  backend/apps-script/
-docs/app-overview.md  docs/backend-setup-guide.md  docs/security.md
-app.json  package.json  package-lock.json  tsconfig.json
-babel.config.js  metro.config.js  .gitignore  .env.example  README.md
-```
-
-Only those three files in `docs/` are published. The rest of `docs/` — the product plan, design
-spec, architecture notes, and wireframes — stays local, and so does the whole `changelog/`. The
-rules use `docs/*` plus `!` allow-list entries; to publish another doc, add a matching
-`!docs/<file>` line to `.gitignore`.
-
-Ignored:
-
-| Path | Why |
-|---|---|
-| `node_modules/` | Reinstall with `npm install` |
-| `.env`, `.env.*` | Contains the shared secret |
-| `.expo/` | Local Expo cache |
-| `dist/`, `dist-web/`, `web-build/` | Build output; bundles can contain a baked-in secret |
-| `expo-env.d.ts` | Regenerated by Expo |
-| `android/`, `ios/` | Regenerated by `expo prebuild` / `expo run` |
-| `*.jks`, `*.keystore`, `*.p8`, `*.p12`, `*.key`, `*.pem`, `*.mobileprovision` | Signing material |
-| `credentials.json`, `clasprc.json`, `google-services.json` | Google credentials and tokens |
-| `coverage/`, `*.log`, `*.tsbuildinfo` | Local artifacts |
-| `.commandcode/` | Per-machine tool preferences |
-| `changelog/` | Implementation history, kept local |
-| `docs/*` except the three allow-listed files | Plan, design spec, architecture notes, wireframes |
-
-Keep `package-lock.json` committed. It pins the dependency tree.
-
-If you ever decide to commit the native `android/` and `ios/` folders, delete those two lines from
-`.gitignore` first; the build-output rules further down still apply.
-
----
-
-## 11. Current scope
+## 8. Current scope
 
 Implemented:
 
@@ -338,7 +250,7 @@ Security model, patched findings, and accepted risks: [`docs/security.md`](docs/
 
 ---
 
-## 12. Documentation
+## 9. Documentation
 
 | Document | Contents |
 |---|---|
