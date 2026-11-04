@@ -37,6 +37,10 @@ describe('backend credential validation', () => {
     expect(validateBackendCredentials(`${endpoint}#fragment`, secret).endpoint).toBeDefined();
   });
 
+  it('rejects a subpath because media URLs resolve from the root', () => {
+    expect(validateBackendCredentials(`${endpoint}/pawfile`, secret).endpoint).toBeDefined();
+  });
+
   it('requires a secret', () => {
     expect(validateBackendCredentials(endpoint, '   ').secret).toBeDefined();
   });

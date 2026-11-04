@@ -60,7 +60,12 @@ export function parseCookies(header: string | undefined): Record<string, string>
     if (separator < 0) continue;
     const name = part.slice(0, separator).trim();
     const value = part.slice(separator + 1).trim();
-    if (name) cookies[name] = decodeURIComponent(value);
+    if (!name) continue;
+    try {
+      cookies[name] = decodeURIComponent(value);
+    } catch {
+      cookies[name] = value;
+    }
   }
   return cookies;
 }

@@ -32,6 +32,12 @@ export function validateBackendCredentials(
         errors.endpoint = 'Remove the username or password from the URL.';
       } else if (url.search || url.hash) {
         errors.endpoint = 'Remove the query string or fragment from the URL.';
+      } else if (
+        url.pathname.replace(/\/+$/, '') &&
+        url.pathname.replace(/\/+$/, '') !== '/api' &&
+        url.pathname.replace(/\/+$/, '') !== '/api/sync'
+      ) {
+        errors.endpoint = 'Use the server root URL, without a path.';
       } else if (url.protocol === 'http:' && !isLocalHost(url.hostname)) {
         errors.endpoint = 'Use https:// for a public server, or a localhost/LAN address.';
       } else if (url.protocol !== 'http:' && url.protocol !== 'https:') {
