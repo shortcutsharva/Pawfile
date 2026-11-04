@@ -18,7 +18,8 @@ It solves three problems:
 
 - Mobile-first application
 - No login or user management
-- Shared central database
+- Local SQLite on every phone, with an optional shared SQLite server
+- Read-only web dashboard for the shared data
 - Case registration and tracking
 - Rescue and legal workflows
 - Assignment to Self, individuals or organizations
@@ -29,7 +30,9 @@ It solves three problems:
 
 ## 3. Users and Roles
 
-- There are no user accounts or roles in V1. The app is used by activists sharing one central database.
+- There are no user accounts or roles in V1. The app is used by activists sharing one central
+  database, protected by a single shared secret. The web dashboard uses the same secret and is
+  read-only.
 - **Assignee:** the person or organization expected to perform an action (Self, an individual, an NGO, an advocate, a family member).
 - **Follow-up By:** the person responsible for checking that the action is completed. This can differ from the assignee.
 - External contacts (rescue teams, vets, police, advocates) do not need app access in V1.
@@ -168,6 +171,8 @@ Rules:
 - **Calendar:** hearings and scheduled actions.
 - **Settings:** reminder configuration, categories (animal types, complaint categories, statuses).
 - **Backup / Export:** export records and maintain backups.
+- **Dashboard:** a read-only website served by the shared SQLite server, showing KPIs, cases,
+  contacts, hearings, documents, and activity. Editing stays in the app.
 
 ## 13. Business Rules
 
@@ -192,7 +197,7 @@ Rules:
 
 These are not answered in the source document and should be settled before or during build:
 
-1. **Authentication:** V1 has no login. How is the shared database protected, and is there a need for device-level access control later?
+1. **Authentication:** V1 has no per-user login. The shared database is protected by one shared secret used by both the app and the read-only dashboard. Is device-level or per-person access control needed later?
 2. **Sensitive data:** Which complainant fields are masked when sharing externally? What exact sharing format is used for WhatsApp?
 3. **Facebook / WhatsApp intake:** Are messages entered manually, or is there an import or integration?
 4. **Offline use:** Mobile field use suggests offline support may be needed. The PDF does not say.
@@ -217,3 +222,4 @@ These are not answered in the source document and should be settled before or du
 8. Reminders and calendar.
 9. Documents upload.
 10. Settings, reports, backup/export.
+11. Shared SQLite server, media storage, and the read-only web dashboard.

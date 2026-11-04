@@ -9,29 +9,23 @@ node_modules/
 # ---------------------------------------------------------------------------
 # Secrets and local configuration
 #
-# .env and .env.* hold the Apps Script URL and shared secret. They must never
-# be committed. .env.example is the documented template and is committed.
+# .env and .env.* hold the server URL and shared secret. They must never be
+# committed. .env.example is the documented template and is committed.
 # ---------------------------------------------------------------------------
 .env
 .env.*
 !.env.example
 
-# Google service credentials, if you ever add native/Firebase config
+# Service credentials, if you ever add native/Firebase config
 credentials.json
 google-services.json
 GoogleService-Info.plist
-
-# clasp (Apps Script CLI) local state - clasprc.json holds OAuth tokens
-clasp.json
-.clasp.json
-clasprc.json
-.clasprc.json
 
 # ---------------------------------------------------------------------------
 # Expo / React Native build output
 #
 # EXPO_PUBLIC_* values are inlined into the bundle at build time, so a bundle
-# built with EXPO_PUBLIC_SHEETS_SECRET contains the secret in plain text.
+# built with EXPO_PUBLIC_API_SECRET contains the secret in plain text.
 # ---------------------------------------------------------------------------
 .expo/
 .expo-shared/
@@ -121,6 +115,16 @@ docs/*
 !docs/backend-setup-guide.md
 !docs/security.md
 changelog/
+
+# ---------------------------------------------------------------------------
+# SQLite server and dashboard build output
+# ---------------------------------------------------------------------------
+server/data/
+server/dist/
+dashboard/dist/
+*.db
+*.db-wal
+*.db-shm
 
 # ---------------------------------------------------------------------------
 # Miscellaneous

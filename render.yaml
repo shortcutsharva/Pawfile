@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: pawfile-server
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm ci --prefix server && npm ci --prefix dashboard && npm run build --prefix dashboard
+    startCommand: npm start --prefix server
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: APP_SHARED_SECRET
+        generateValue: true
+      - key: NODE_VERSION
+        value: 22.13.0
+      - key: NODE_ENV
+        value: production
+      - key: TZ
+        value: Asia/Kolkata
+      - key: DATABASE_PATH
+        value: /var/data/pawfile.db
+      - key: UPLOADS_DIR
+        value: /var/data/uploads
+      - key: DASHBOARD_DIR
+        value: /opt/render/project/src/dashboard/dist
+    disk:
+      name: pawfile-data
+      mountPath: /var/data
+      sizeGB: 1

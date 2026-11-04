@@ -10,7 +10,14 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "stack:install": "npm --prefix server install && npm --prefix dashboard install",
+    "server:dev": "npm --prefix server run dev",
+    "server:start": "npm --prefix server run start",
+    "server:test": "npm --prefix server test",
+    "dashboard:dev": "npm --prefix dashboard run dev",
+    "dashboard:build": "npm --prefix dashboard run build",
+    "stack:dev": "concurrently -n api,web -c green,cyan \"npm run server:dev\" \"npm run dashboard:dev\""
   },
   "jest": {
     "preset": "jest-expo",
@@ -63,6 +70,9 @@
     "@testing-library/react-native": "^14.1.0",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.3.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~58.0.4",
     "jest": "^30.5.2",
     "jest-expo": "^58.0.11",
     "react-test-renderer": "^19.3.0",
