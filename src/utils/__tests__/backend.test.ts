@@ -1,39 +1,40 @@
 import { MIN_SHARED_SECRET_LENGTH, validateBackendCredentials } from '@/utils/backend';
 
-const endpoint = 'https://script.google.com/macros/s/AKfycbExampleDeploymentId/exec';
+const endpoint = 'https://pawfile.onrender.com';
 const secret = '0123456789abcdef0123456789abcdef';
 
 describe('backend credential validation', () => {
-  it('accepts a deployed Apps Script URL and secret', () => {
+  it('accepts a public https server URL and secret', () => {
     expect(validateBackendCredentials(endpoint, secret)).toEqual({});
   });
 
-  it('rejects empty, malformed, and non-https endpoints', () => {
-    expect(validateBackendCredentials('', secret).endpoint).toBeDefined();
-    expect(validateBackendCredentials('not-a-url', secret).endpoint).toBeDefined();
-    expect(validateBackendCredentials('http://example.com/exec', secret).endpoint).toBeDefined();
+  it('accepts an explicit sync endpoint path', () => {
+    expect(validateBackendCredentials(`${endpoint}/api/sync`, secret)).toEqual({});
   });
 
-  it('rejects hosts other than script.google.com so the secret cannot be sent elsewhere', () => {
-    expect(
-      validateBackendCredentials('https://evil.example.com/macros/s/abc/exec', secret).endpoint,
-    ).toBeDefined();
-    expect(
-      validateBackendCredentials('https://script.google.com.evil.example.com/exec', secret).endpoint,
-    ).toBeDefined();
+  it('allows plain http only for localhost and private LAN hosts', () => {
+    expect(validateBackendCredentials('http://localhost:4000', secret).endpoint).toBeUndefined();
+    expect(validateBackendCredentials('http://127.0.0.1:4000', secret).endpoint).toBeUndefined();
+    expect(validateBackendCredentials('http://10.0.2.2:4000', secret).endpoint).toBeUndefined();
+    expect(validateBackendCredentials('http://192.168.1.20:4000', secret).endpoint).toBeUndefined();
+    expect(validateBackendCredentials('http://172.20.0.5:4000', secret).endpoint).toBeUndefined();
+    expect(validateBackendCredentials('http://example.com', secret).endpoint).toBeDefined();
+  });
+
+  it('rejects empty and malformed endpoints', () => {
+    expect(validateBackendCredentials('', secret).endpoint).toBeDefined();
+    expect(validateBackendCredentials('not-a-url', secret).endpoint).toBeDefined();
   });
 
   it('rejects credentials embedded in the URL', () => {
     expect(
-      validateBackendCredentials('https://user:pass@script.google.com/macros/s/abc/exec', secret)
-        .endpoint,
+      validateBackendCredentials('https://user:pass@pawfile.onrender.com', secret).endpoint,
     ).toBeDefined();
   });
 
-  it('requires the /exec deployment URL', () => {
-    expect(
-      validateBackendCredentials('https://script.google.com/macros/s/abc/dev', secret).endpoint,
-    ).toBeDefined();
+  it('rejects query strings and fragments in the endpoint', () => {
+    expect(validateBackendCredentials(`${endpoint}?secret=abc`, secret).endpoint).toBeDefined();
+    expect(validateBackendCredentials(`${endpoint}#fragment`, secret).endpoint).toBeDefined();
   });
 
   it('requires a secret', () => {
@@ -41,7 +42,11 @@ describe('backend credential validation', () => {
   });
 
   it('requires a secret of at least the documented length', () => {
-    expect(validateBackendCredentials(endpoint, 'a'.repeat(MIN_SHARED_SECRET_LENGTH - 1)).secret).toBeDefined();
-    expect(validateBackendCredentials(endpoint, 'a'.repeat(MIN_SHARED_SECRET_LENGTH)).secret).toBeUndefined();
+    expect(
+      validateBackendCredentials(endpoint, 'a'.repeat(MIN_SHARED_SECRET_LENGTH - 1)).secret,
+    ).toBeDefined();
+    expect(
+      validateBackendCredentials(endpoint, 'a'.repeat(MIN_SHARED_SECRET_LENGTH)).secret,
+    ).toBeUndefined();
   });
 });

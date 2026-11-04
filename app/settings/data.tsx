@@ -45,7 +45,7 @@ export default function DataSettingsScreen() {
         {sync.mode === 'local' ? (
           <FlagBanner
             tone="info"
-            text="Local-only mode. Open Shared backend to connect the Google Sheets database from inside the app."
+            text="Local-only mode. Open Shared backend to connect the SQLite server database from inside the app."
           />
         ) : null}
 
@@ -58,7 +58,7 @@ export default function DataSettingsScreen() {
           <View style={styles.flex}>
             <AppText variant="bodyLg">Shared backend</AppText>
             <AppText variant="caption" color={colors.ink500}>
-              Apps Script URL and shared secret, stored on this device
+              Server URL and shared secret, stored on this device
             </AppText>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.ink300} />

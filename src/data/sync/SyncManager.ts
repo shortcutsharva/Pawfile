@@ -443,5 +443,5 @@ export function stopSyncManager(): void {
 }
 
 export function backendModeLabel(): string {
-  return getTransport().mode === 'remote' ? 'Google Sheets' : 'On this device';
+  return getTransport().mode === 'remote' ? 'SQLite server' : 'On this device';
 }

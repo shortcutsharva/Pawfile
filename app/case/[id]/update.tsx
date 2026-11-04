@@ -86,6 +86,7 @@ export default function UpdateCaseScreen() {
 
   useEffect(() => {
     if (!action || initialized) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus(action.type === 'rescue' ? action.rescueStatus : action.legalStatus);
     setAssignedToId(action.assignedToId);
     setAssignedToName(action.assignedToName);

@@ -166,7 +166,7 @@ export default function BackupScreen() {
             onPress={() => void restoreLatest()}
           />
           <AppText variant="caption" color={colors.ink500}>
-            Automatic backups stay in this app's private storage. Restore them here; use Export now
+            Automatic backups stay in this app&apos;s private storage. Restore them here; use Export now
             to share a copy.
           </AppText>
         </View>

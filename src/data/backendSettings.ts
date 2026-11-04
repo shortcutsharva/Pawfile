@@ -25,8 +25,8 @@ let current: BackendCredentials | null = null;
 let source: BackendSource = 'none';
 
 function envCredentials(): BackendCredentials | null {
-  if (!env.sheetsEndpoint || !env.sheetsSecret) return null;
-  return { endpoint: env.sheetsEndpoint, secret: env.sheetsSecret };
+  if (!env.apiEndpoint || !env.apiSecret) return null;
+  return { endpoint: env.apiEndpoint, secret: env.apiSecret };
 }
 
 async function readSaved(): Promise<BackendCredentials | null> {

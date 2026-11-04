@@ -86,7 +86,7 @@ export default function SettingsScreen() {
           <AppText variant="bodyLg">Sync now</AppText>
           <AppText variant="caption" color={colors.ink500}>
             {sync.mode === 'remote'
-              ? 'Connected to the shared Google Sheet.'
+              ? 'Connected to the shared SQLite server.'
               : 'Local-only mode. Open Data and sync → Shared backend to connect the shared database.'}
           </AppText>
           <Pressable

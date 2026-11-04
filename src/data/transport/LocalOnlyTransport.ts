@@ -24,6 +24,6 @@ export class LocalOnlyTransport implements SyncTransport {
   }
 
   async uploadMedia(): Promise<{ fileId: string; url: string }> {
-    throw new Error('Media upload requires the Google backend to be configured.');
+    throw new Error('Media upload requires the shared server to be configured.');
   }
 }

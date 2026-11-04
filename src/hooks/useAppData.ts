@@ -31,7 +31,7 @@ export function useAsyncData<T>(loader: () => Promise<T>, initial: T, deps: unkn
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
   }, deps);
 
   useEffect(() => {
@@ -94,5 +94,6 @@ export function useActorName(): string {
 }
 
 export function useMemoizedFilters<T>(value: T): T {
+  // eslint-disable-next-line react-hooks/use-memo
   return useMemo(() => value, [JSON.stringify(value)]);
 }

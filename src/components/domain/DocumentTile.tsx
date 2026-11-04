@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { colors, radius, spacing } from '@/theme/tokens';
 import type { DocumentMeta } from '@/data/types';
@@ -19,6 +20,10 @@ export function DocumentTile({
   const isImage = document.mimeType.startsWith('image') && Boolean(document.remoteUrl || document.localUri);
   const isUploading = document.uploadStatus === 'uploading' || document.uploadStatus === 'pending';
   const isFailed = document.uploadStatus === 'failed';
+  const preferredSource = document.remoteUrl || document.localUri;
+  const [failedSource, setFailedSource] = useState<string | null>(null);
+  const imageSource =
+    failedSource === preferredSource && document.localUri ? document.localUri : preferredSource;
 
   return (
     <Pressable
@@ -29,9 +34,14 @@ export function DocumentTile({
     >
       {isImage ? (
         <Image
-          source={{ uri: document.remoteUrl || document.localUri }}
+          source={{ uri: imageSource }}
           style={styles.thumb}
           resizeMode="cover"
+          onError={() => {
+            if (document.localUri && preferredSource !== document.localUri) {
+              setFailedSource(preferredSource);
+            }
+          }}
         />
       ) : (
         <View style={styles.iconWrap}>

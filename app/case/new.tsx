@@ -171,7 +171,7 @@ export default function NewCaseScreen() {
     setStep((current) => Math.min(current + 1, STEPS.length - 1));
   };
 
-  const useMapPin = async () => {
+  const fillCurrentLocation = async () => {
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (!permission.granted) {
@@ -414,7 +414,7 @@ export default function NewCaseScreen() {
                 label="Use current location"
                 icon="location-outline"
                 variant="secondary"
-                onPress={() => void useMapPin()}
+                onPress={() => void fillCurrentLocation()}
                 style={styles.mapButton}
               />
               <SelectField

@@ -2,17 +2,14 @@ const appEnv = process.env.EXPO_PUBLIC_APP_ENV ?? 'development';
 
 const raw = {
   appEnv,
-  sheetsEndpoint: process.env.EXPO_PUBLIC_SHEETS_ENDPOINT ?? '',
-  sheetsSecret: process.env.EXPO_PUBLIC_SHEETS_SECRET ?? '',
-  demoMode:
-    (process.env.EXPO_PUBLIC_DEMO_MODE ?? (appEnv === 'production' ? 'false' : 'true')).toLowerCase() !==
-    'false',
+  apiEndpoint: process.env.EXPO_PUBLIC_API_ENDPOINT ?? '',
+  apiSecret: process.env.EXPO_PUBLIC_API_SECRET ?? '',
   defaultActorName: process.env.EXPO_PUBLIC_DEFAULT_ACTOR_NAME ?? 'Activist',
 };
 
 export const env = {
   ...raw,
-  hasRemoteBackend: Boolean(raw.sheetsEndpoint && raw.sheetsSecret),
+  hasRemoteBackend: Boolean(raw.apiEndpoint && raw.apiSecret),
   isDevelopment: raw.appEnv !== 'production',
 } as const;
 

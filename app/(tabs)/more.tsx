@@ -76,7 +76,7 @@ export default function MoreScreen() {
               color={sync.online ? colors.pine700 : colors.ochre700}
             />
             <AppText variant="body" style={styles.flex}>
-              {sync.mode === 'remote' ? 'Google Sheets sync' : 'On this device'} ·{' '}
+              {sync.mode === 'remote' ? 'Shared server sync' : 'On this device'} ·{' '}
               {sync.syncing ? 'Syncing…' : `${sync.queueDepth} pending`}
             </AppText>
             <Button label="Sync" size="sm" variant="secondary" onPress={() => void retryFailedSync()} />

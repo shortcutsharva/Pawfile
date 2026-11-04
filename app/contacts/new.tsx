@@ -50,6 +50,7 @@ export default function ContactFormScreen() {
 
   useEffect(() => {
     if (existing && !initialized) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(existing.name);
       setOrganization(existing.organization);
       setPhone(existing.phone);

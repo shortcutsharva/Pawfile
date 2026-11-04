@@ -15,7 +15,7 @@ import {
   type BackendSource,
 } from '@/data/backendSettings';
 import { resetTransport } from '@/data/transport';
-import { AppsScriptTransport } from '@/data/transport/AppsScriptTransport';
+import { PawfileServerTransport } from '@/data/transport/PawfileServerTransport';
 import {
   backfillLocalRecords,
   backendModeLabel,
@@ -45,8 +45,8 @@ export default function BackendSettingsScreen() {
     setBusy(true);
     setFeedback(null);
     try {
-      const transport = new AppsScriptTransport({
-        endpoint: endpoint.trim(),
+      const transport = new PawfileServerTransport({
+        baseUrl: endpoint.trim(),
         secret: secret.trim(),
       });
       const ok = await transport.health();
@@ -55,7 +55,7 @@ export default function BackendSettingsScreen() {
           ? { tone: 'success', text: 'Connection successful. The backend accepted the secret.' }
           : {
               tone: 'critical',
-              text: 'Could not reach the backend. Check the URL, secret, and deployment access.',
+              text: 'Could not reach the server. Check the URL, secret, and that the server is running.',
             },
       );
     } finally {
@@ -160,26 +160,26 @@ export default function BackendSettingsScreen() {
               Credentials
             </AppText>
             <AppText variant="body">
-              {source === 'saved' ? 'Saved on device' : source === 'env' ? 'Built-in' : 'None'}
+              {source === 'saved' ? 'Saved on device' : source === 'env' ? 'Environment' : 'None'}
             </AppText>
           </View>
         </View>
 
         <FlagBanner
           tone="info"
-          text="Enter the deployed Apps Script URL and the shared secret. The spreadsheet ID and Drive folder stay in Apps Script properties."
+          text="Enter the base URL of your Pawfile server and the shared secret. Cases, media, and the SQLite database stay on that server."
         />
 
         <View style={styles.card}>
           <TextField
-            label="Apps Script URL"
+            label="Server URL"
             required
             value={endpoint}
             onChange={setEndpoint}
-            placeholder="https://script.google.com/macros/s/…/exec"
+            placeholder="https://pawfile.onrender.com"
             autoCapitalize="none"
             error={errors.endpoint}
-            helper="Deploy as a Web App and copy the URL ending in /exec."
+            helper="Base URL only. Do not include /api/sync."
           />
           <TextField
             label="Shared secret"
@@ -190,7 +190,7 @@ export default function BackendSettingsScreen() {
             autoCapitalize="none"
             secureTextEntry
             error={errors.secret}
-            helper="Stored securely on this device, never in the spreadsheet."
+            helper="Stored securely on this device, never in the database."
           />
           <Button
             label={busy ? 'Checking…' : 'Test connection'}
@@ -221,7 +221,7 @@ export default function BackendSettingsScreen() {
 
         <AppText variant="caption" color={colors.ink500}>
           Local-only mode keeps every record on this device. Connecting a backend uploads the
-          device's unsynced records first, then syncs every five minutes, on reconnect, and when the
+          device&apos;s unsynced records first, then syncs every five minutes, on reconnect, and when the
           app returns to the foreground.
         </AppText>
       </ScrollView>
