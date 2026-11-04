@@ -1,14 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppBar, Divider } from '@/components/ui/Layout';
 import { AppText } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { FlagBanner } from '@/components/ui/FlagBanner';
 import { useSettings, useSyncStatus } from '@/hooks/useAppData';
-import { resetDemoData, seedDemoData } from '@/data/seed';
 import { backendModeLabel, retryFailedSync } from '@/data/sync/SyncManager';
 import { formatDateTime } from '@/utils/date';
 import { colors, radius, spacing } from '@/theme/tokens';
@@ -17,31 +15,6 @@ export default function DataSettingsScreen() {
   const router = useRouter();
   const settings = useSettings();
   const sync = useSyncStatus();
-  const [busy, setBusy] = useState(false);
-
-  const loadDemo = async () => {
-    setBusy(true);
-    await seedDemoData(true);
-    setBusy(false);
-    Alert.alert('Demo data loaded', 'Sample cases and contacts are ready on the worklist.');
-  };
-
-  const clearDemo = async () => {
-    Alert.alert(
-      'Remove demo data?',
-      'Sample cases, contacts, hearings, and actions are removed from this device.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            void resetDemoData();
-          },
-        },
-      ],
-    );
-  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -90,18 +63,6 @@ export default function DataSettingsScreen() {
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.ink300} />
         </Pressable>
-
-        <View style={styles.card}>
-          <Row icon="albums-outline" label="Demo records" value={settings.demoSeeded ? 'Loaded' : 'Not loaded'} />
-          <Button
-            label="Load demo data"
-            variant="secondary"
-            loading={busy}
-            onPress={() => void loadDemo()}
-            style={styles.button}
-          />
-          <Button label="Remove demo data" variant="ghost" onPress={clearDemo} />
-        </View>
 
         <Pressable
           onPress={() => router.push('/backup')}

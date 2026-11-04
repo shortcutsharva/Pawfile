@@ -311,9 +311,6 @@ EXPO_PUBLIC_SHEETS_SECRET=PASTE_YOUR_SECRET_HERE
 Then restart the app with `npx expo start -c`. In-app setup is easier and does not require a
 rebuild.
 
-> **Demo data:** if the app currently contains sample/demo cases and you do not want them in the
-> shared Sheet, remove them first with **Settings → Data → Remove demo data**.
-
 ---
 
 ## Part 8 — Check that it worked

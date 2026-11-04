@@ -1,8 +1,7 @@
-import { env } from '@/config/env';
 import { getDb } from '@/db/client';
 import { loadConfig } from '@/data/appConfig';
 import { loadBackendCredentials } from '@/data/backendSettings';
-import { ensureDemoSeed } from '@/data/seed';
+import { removeLegacyDemoData } from '@/data/demoCleanup';
 import { loadSettings } from '@/data/settings';
 import { refreshHearingStatuses } from '@/data/services/hearingService';
 import { refreshQueueDepth, startSyncManager } from '@/data/sync/SyncManager';
@@ -17,9 +16,7 @@ export function bootstrap(): Promise<void> {
       await loadBackendCredentials();
       await loadConfig();
       await refreshHearingStatuses();
-      if (env.demoMode) {
-        await ensureDemoSeed();
-      }
+      await removeLegacyDemoData();
       await refreshQueueDepth();
       startSyncManager();
     })();

@@ -41,7 +41,6 @@ For build-time defaults, create `.env.local` in the project root instead (gitign
 ```dotenv
 EXPO_PUBLIC_SHEETS_ENDPOINT=https://script.google.com/macros/s/XXXXXXXX/exec
 EXPO_PUBLIC_SHEETS_SECRET=the-same-long-random-string
-EXPO_PUBLIC_DEMO_MODE=true
 ```
 
 Restart Expo (`npx expo start --clear`). In **Settings → Data and sync** the backend should

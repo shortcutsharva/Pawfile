@@ -160,7 +160,7 @@ export default function BackendSettingsScreen() {
               Credentials
             </AppText>
             <AppText variant="body">
-              {source === 'saved' ? 'Saved on device' : source === 'env' ? 'From .env' : 'None'}
+              {source === 'saved' ? 'Saved on device' : source === 'env' ? 'Built-in' : 'None'}
             </AppText>
           </View>
         </View>

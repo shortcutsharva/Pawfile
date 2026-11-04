@@ -65,8 +65,7 @@ Do not commit `node_modules/` or any `.env` file. `.gitignore` already excludes 
 3. Scan the QR code with Expo Go (Android) or the Camera app (iOS).
 4. Keep the terminal running while you use the app.
 
-On first launch the app seeds demo cases so the worklist is not empty. Before entering real data,
-remove them with **More → Settings → Data and sync → Remove demo data**.
+The app starts with an empty worklist and stores everything locally on the phone.
 
 ### Development build (needed for notifications)
 
@@ -151,12 +150,10 @@ Create `.env.local` (gitignored) before building:
 
 ```dotenv
 EXPO_PUBLIC_APP_ENV=production
-EXPO_PUBLIC_DEMO_MODE=false
 ```
 
-Demo seeding is off when `EXPO_PUBLIC_APP_ENV=production`, but setting `EXPO_PUBLIC_DEMO_MODE=false`
-explicitly is safer. Prefer entering the backend URL and secret inside the app rather than putting
-them in `.env.local`; a value in `.env.local` is compiled into the bundle and can be extracted.
+Prefer entering the backend URL and secret inside the app rather than putting them in `.env.local`;
+a value in `.env.local` is compiled into the bundle and can be extracted.
 
 ### Local Android build
 
